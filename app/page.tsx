@@ -2,6 +2,7 @@ import RoadmapTimeline from "@/components/Timeline";
 import ProgressRing from "@/components/ProgressRing";
 import TaskList from "@/components/TaskList";
 import ResourceCard from "@/components/ResourceCard";
+import BookList from "@/components/BookList";
 import {
   progressCategories,
   resources,
@@ -91,7 +92,7 @@ export default function Home() {
         </div>
 
         {/* Resources */}
-        <section>
+        <section className="mb-10">
           <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <h2 className="mb-6 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
               🔗 Resources
@@ -106,6 +107,11 @@ export default function Home() {
               data file.
             </p>
           </div>
+        </section>
+
+        {/* Reading List */}
+        <section className="mb-10">
+          <BookList />
         </section>
 
         {/* Footer note */}
