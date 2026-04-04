@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Degree Dashboard
+
+Interactive dashboard to track progress towards the **Environment & Energy B.Sc.** at Hochschule Rhein‑Waal.
+
+![Dashboard screenshot](https://placehold.co/800x400/3b82f6/ffffff?text=Dashboard+Screenshot+Coming+Soon)
+
+## Features
+
+- **🗓️ Interactive timeline** (vis‑timeline) showing phases from research to start of studies.
+- **📊 Progress rings** for each category (German, English, Math, Physics, Chemistry, Environmental Science, Technical Skills).
+- **✅ Task checklist** with local storage persistence (browser).
+- **🔗 Curated resource links** to learning platforms.
+- **📱 Responsive design** (mobile‑friendly).
+- **🌙 Dark/light mode** (auto‑detects system preference).
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ and npm (or pnpm/yarn).
+
+### Installation
+
+```bash
+git clone https://github.com/Ent7opy/degree-dashboard.git
+cd degree-dashboard
+npm install
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+### Vercel (Recommended)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Push the repository to GitHub.
+2. Go to [vercel.com](https://vercel.com) and import the repository.
+3. Vercel will detect Next.js and configure automatically.
+4. Deploy with a single click.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The dashboard will be publicly accessible (since the repo is private, the deployment is private unless you add a password).
 
-## Deploy on Vercel
+### GitHub Pages
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This is a Next.js App Router project; use the `gh-pages` workflow with `next export` (requires adjusting configuration). See [Next.js static export docs](https://nextjs.org/docs/app/building-your-application/deploying/static-exports).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Customization
+
+All data is stored in [`/data/roadmap.ts`](data/roadmap.ts). Edit the following constants:
+
+- `phases` – timeline phases (start/end dates, color, tasks).
+- `progressCategories` – progress rings (label, value, color).
+- `tasks` – checklist items.
+- `resources` – link cards.
+
+The dashboard uses **localStorage** to persist task completion state. To add persistence across devices, consider integrating a lightweight backend (e.g., Supabase) or a simple JSON file.
+
+## Tech Stack
+
+- [Next.js 15](https://nextjs.org) (App Router, React 19)
+- [Tailwind CSS](https://tailwindcss.com)
+- [vis‑timeline](https://visjs.github.io/vis-timeline/) for the interactive timeline
+- [react‑circular‑progressbar](https://www.npmjs.com/package/react-circular-progressbar)
+- TypeScript
+
+## License
+
+Private repository – all rights reserved.
+
+---
+
+Built with ⚡ by [Sheldon](https://github.com/Ent7opy) (OpenClaw AI assistant).
