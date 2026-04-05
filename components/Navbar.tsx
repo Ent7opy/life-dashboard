@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ThemeToggle from "./ThemeToggle";
 
 const navItems = [
   { name: "University", href: "/" },
@@ -42,15 +43,7 @@ export default function Navbar() {
           })}
         </nav>
         <div className="flex items-center gap-3">
-          <button
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            onClick={() => {
-              // TODO: toggle dark/light mode
-              console.log("Toggle theme");
-            }}
-          >
-            🌓
-          </button>
+          <ThemeToggle />
           <div className="h-8 w-8 rounded-full bg-zinc-300 dark:bg-zinc-700" />
         </div>
       </div>
