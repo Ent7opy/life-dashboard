@@ -1,5 +1,6 @@
 // Dashboard page – updated 2026-04-05 to force Vercel rebuild
 // Reading list integration live
+// Vercel Pro trial enabled 2026-04-05
 import RoadmapTimeline from "@/components/Timeline";
 import EditableProgressRing from "@/components/EditableProgressRing";
 import TaskList from "@/components/TaskList";
