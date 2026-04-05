@@ -4,11 +4,24 @@ import { useEffect, useRef } from "react";
 import { DataSet } from "vis-data";
 import { Timeline } from "vis-timeline/peer/esm/vis-timeline-graph2d.mjs";
 import "vis-timeline/styles/vis-timeline-graph2d.css";
-import { phases } from "@/data/roadmap";
+import { Phase } from "@/data/roadmap";
 
-export default function RoadmapTimeline() {
+interface RoadmapTimelineProps {
+  phases: Phase[];
+}
+
+export default function RoadmapTimeline({ phases }: RoadmapTimelineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<Timeline | null>(null);
+
+  // Calculate min and max dates from phases
+  const allDates = phases.flatMap(p => [new Date(p.start), new Date(p.end)]);
+  const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+  const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+  
+  // Add some padding
+  minDate.setMonth(minDate.getMonth() - 1);
+  maxDate.setMonth(maxDate.getMonth() + 1);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -37,8 +50,8 @@ export default function RoadmapTimeline() {
           month: "MMM YYYY",
         },
       },
-      min: new Date("2026-03-01"),
-      max: new Date("2027-12-31"),
+      min: minDate,
+      max: maxDate,
     };
 
     timelineRef.current = new Timeline(containerRef.current, items, options);
@@ -48,7 +61,7 @@ export default function RoadmapTimeline() {
         timelineRef.current.destroy();
       }
     };
-  }, []);
+  }, [phases, minDate, maxDate]);
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">

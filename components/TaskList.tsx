@@ -1,16 +1,43 @@
 "use client";
 
-import { useState } from "react";
-import { tasks } from "@/data/roadmap";
+import { useState, useEffect } from "react";
+import { Task } from "@/data/roadmap";
 
-export default function TaskList() {
-  const [taskState, setTaskState] = useState(
-    tasks.reduce((acc, task) => ({ ...acc, [task.id]: task.completed }), {} as Record<string, boolean>)
-  );
+interface TaskListProps {
+  tasks: Task[];
+}
+
+export default function TaskList({ tasks }: TaskListProps) {
+  // Initialize state from localStorage or default completed status
+  const [taskState, setTaskState] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const saved = localStorage.getItem("task-state");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setTaskState(parsed);
+      } catch (e) {
+        // Fallback to default
+        const defaultState = tasks.reduce(
+          (acc, task) => ({ ...acc, [task.id]: task.completed }),
+          {}
+        );
+        setTaskState(defaultState);
+      }
+    } else {
+      const defaultState = tasks.reduce(
+        (acc, task) => ({ ...acc, [task.id]: task.completed }),
+        {}
+      );
+      setTaskState(defaultState);
+    }
+  }, [tasks]);
 
   const toggleTask = (id: string) => {
-    setTaskState((prev) => ({ ...prev, [id]: !prev[id] }));
-    // In a real app, persist to localStorage or backend
+    const newState = { ...taskState, [id]: !taskState[id] };
+    setTaskState(newState);
+    localStorage.setItem("task-state", JSON.stringify(newState));
   };
 
   const completedCount = Object.values(taskState).filter(Boolean).length;
@@ -32,7 +59,7 @@ export default function TaskList() {
             <input
               type="checkbox"
               id={task.id}
-              checked={taskState[task.id]}
+              checked={taskState[task.id] || false}
               onChange={() => toggleTask(task.id)}
               className="mt-1 h-5 w-5 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-800"
             />
