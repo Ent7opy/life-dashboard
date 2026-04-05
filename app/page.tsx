@@ -1,7 +1,7 @@
 // Dashboard page – updated 2026-04-05 to force Vercel rebuild
 // Reading list integration live
 import RoadmapTimeline from "@/components/Timeline";
-import ProgressRing from "@/components/ProgressRing";
+import EditableProgressRing from "@/components/EditableProgressRing";
 import TaskList from "@/components/TaskList";
 import ResourceCard from "@/components/ResourceCard";
 import BookList from "@/components/BookList";
@@ -73,8 +73,9 @@ export default function Home() {
               </h2>
               <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
                 {progressCategories.map((cat) => (
-                  <ProgressRing
+                  <EditableProgressRing
                     key={cat.id}
+                    id={cat.id}
                     label={cat.label}
                     value={cat.value}
                     color={cat.color}
