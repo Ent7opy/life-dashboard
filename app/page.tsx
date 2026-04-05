@@ -5,6 +5,7 @@ import EditableProgressRing from "@/components/EditableProgressRing";
 import TaskList from "@/components/TaskList";
 import ResourceCard from "@/components/ResourceCard";
 import BookList from "@/components/BookList";
+import WeeklyReview from "@/components/WeeklyReview";
 import {
   progressCategories,
   resources,
@@ -115,6 +116,11 @@ export default function Home() {
         {/* Reading List */}
         <section className="mb-10">
           <BookList />
+        </section>
+
+        {/* Weekly Review */}
+        <section className="mb-10">
+          <WeeklyReview />
         </section>
 
         {/* Footer note */}
