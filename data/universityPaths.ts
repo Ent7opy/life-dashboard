@@ -177,7 +177,7 @@ export const bulgarianPath: UniversityPath = {
   country: "Bulgaria",
   university: "University of Forestry (Лесотехнически университет)",
   program: "Ecology and Environmental Protection (Екология и опазване на околната среда)",
-  language: "Bulgarian (B2 required)",
+  language: "Bulgarian (native)",
   duration: "4 years (8 semesters)",
   tuition: "~€0–€2000/year for EU citizens at public universities",
   deadline: "2027-06-30",
@@ -192,7 +192,7 @@ export const bulgarianPath: UniversityPath = {
       tasks: [
         "Research Bulgarian university programs",
         "Gather official documents (high school diploma, transcripts)",
-        "Start Bulgarian language refresh (if needed)",
+        "Review Bulgarian academic terminology",
         "Review high‑school biology and chemistry",
       ],
     },
@@ -203,7 +203,7 @@ export const bulgarianPath: UniversityPath = {
       end: "2026-12-31",
       color: "#10b981",
       tasks: [
-        "Bulgarian language proficiency (B2 level)",
+        "Review Bulgarian academic terminology",
         "Prepare for entrance exams (Biology, Chemistry)",
         "Refresh mathematics",
         "Explore environmental science MOOCs",
@@ -266,7 +266,7 @@ export const bulgarianPath: UniversityPath = {
     },
   ],
   progressCategories: [
-    { id: "bulgarian", label: "Bulgarian Language", value: 90, color: "#3b82f6" },
+    { id: "bulgarian", label: "Bulgarian Language", value: 100, color: "#3b82f6" },
     { id: "biology", label: "Biology", value: 40, color: "#10b981" },
     { id: "chemistry", label: "Chemistry", value: 35, color: "#8b5cf6" },
     { id: "math", label: "Mathematics", value: 60, color: "#f59e0b" },
@@ -276,7 +276,7 @@ export const bulgarianPath: UniversityPath = {
   resources: [
     {
       id: "1",
-      title: "Bulgarian Language Learning (B2)",
+      title: "Bulgarian Academic Terminology",
       url: "https://bg.wikipedia.org/wiki/Български_език",
       category: "Language",
     },
