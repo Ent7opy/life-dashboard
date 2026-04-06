@@ -1,12 +1,23 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { defaultSkills, type Skill } from "@/data/greentech";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { defaultSkills, type Skill } from '@/data/greentech';
+import type {
+  ApiHabit,
+  ApiGoal,
+  ApiProject,
+  ApiTask,
+  ApiJournalEntry,
+  ApiHealthLog,
+  ApiInboxItem,
+  ApiHobby,
+  ApiNote,
+  ApiWeeklyReview,
+} from '@/lib/api';
 
 // ── Shared types ──────────────────────────────────────────────────────────────
-// Kept here so hooks and components import from one place.
 
 export type ReviewEntry = {
-  date: string; // YYYY-MM-DD
+  date: string;
   hours: number;
   reflection: string;
   goals: string[];
@@ -15,29 +26,83 @@ export type ReviewEntry = {
 // ── Store shape ───────────────────────────────────────────────────────────────
 
 interface DashboardState {
-  // Skills ─────────────────────────────────────────────────────────────────
+  // ── Skills ──────────────────────────────────────────────────────────────
   skills: Skill[];
   setSkillValue: (id: string, value: number) => void;
+  setSkills: (skills: Skill[]) => void;
 
-  // Books ──────────────────────────────────────────────────────────────────
+  // ── Books (legacy reading state) ────────────────────────────────────────
   readState: Record<string, boolean>;
   toggleBook: (id: string) => void;
-  /** Replace entire readState (used when hydrating from API). */
   setReadState: (state: Record<string, boolean>) => void;
 
-  // Weekly review ──────────────────────────────────────────────────────────
+  // ── Weekly review (legacy) ───────────────────────────────────────────────
   entries: ReviewEntry[];
   goals: string[];
   upsertEntry: (entry: ReviewEntry) => void;
-  /** Replace entire entries list (used when hydrating from API). */
   setEntries: (entries: ReviewEntry[]) => void;
   addGoal: (goal: string) => void;
   removeGoal: (index: number) => void;
 
-  // Meta ───────────────────────────────────────────────────────────────────
-  /** ISO date string of when the learning journey began. */
+  // ── Meta ─────────────────────────────────────────────────────────────────
   learningStartDate: string | null;
   setLearningStartDate: (date: string) => void;
+
+  // ── Habits ───────────────────────────────────────────────────────────────
+  habits: ApiHabit[];
+  setHabits: (habits: ApiHabit[]) => void;
+  setHabitDone: (id: string, done: boolean) => void;
+
+  // ── Goals ─────────────────────────────────────────────────────────────────
+  apiGoals: ApiGoal[];
+  setApiGoals: (goals: ApiGoal[]) => void;
+  upsertApiGoal: (goal: ApiGoal) => void;
+  removeApiGoal: (id: string) => void;
+
+  // ── Projects ──────────────────────────────────────────────────────────────
+  projects: ApiProject[];
+  setProjects: (projects: ApiProject[]) => void;
+  upsertProject: (project: ApiProject) => void;
+  removeProject: (id: string) => void;
+
+  // ── Tasks (v1) ────────────────────────────────────────────────────────────
+  tasksV1: ApiTask[];
+  setTasksV1: (tasks: ApiTask[]) => void;
+  upsertTaskV1: (task: ApiTask) => void;
+  removeTaskV1: (id: string) => void;
+
+  // ── Journal ───────────────────────────────────────────────────────────────
+  journalEntries: ApiJournalEntry[];
+  setJournalEntries: (entries: ApiJournalEntry[]) => void;
+  upsertJournalEntry: (entry: ApiJournalEntry) => void;
+
+  // ── Health ────────────────────────────────────────────────────────────────
+  healthLogs: ApiHealthLog[];
+  setHealthLogs: (logs: ApiHealthLog[]) => void;
+  upsertHealthLog: (log: ApiHealthLog) => void;
+
+  // ── Inbox ─────────────────────────────────────────────────────────────────
+  inboxItems: ApiInboxItem[];
+  setInboxItems: (items: ApiInboxItem[]) => void;
+  addInboxItem: (item: ApiInboxItem) => void;
+  removeInboxItem: (id: string) => void;
+
+  // ── Hobbies ───────────────────────────────────────────────────────────────
+  hobbies: ApiHobby[];
+  setHobbies: (hobbies: ApiHobby[]) => void;
+  upsertHobby: (hobby: ApiHobby) => void;
+  removeHobby: (id: string) => void;
+
+  // ── Notes ─────────────────────────────────────────────────────────────────
+  notes: ApiNote[];
+  setNotes: (notes: ApiNote[]) => void;
+  upsertNote: (note: ApiNote) => void;
+  removeNote: (id: string) => void;
+
+  // ── Weekly Reviews (v1) ───────────────────────────────────────────────────
+  weeklyReviews: ApiWeeklyReview[];
+  setWeeklyReviews: (reviews: ApiWeeklyReview[]) => void;
+  upsertWeeklyReview: (review: ApiWeeklyReview) => void;
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
@@ -48,45 +113,100 @@ export const useDashboardStore = create<DashboardState>()(
       // Skills
       skills: defaultSkills,
       setSkillValue: (id, value) =>
-        set((s) => ({
-          skills: s.skills.map((skill) =>
-            skill.id === id ? { ...skill, value } : skill
-          ),
-        })),
+        set((s) => ({ skills: s.skills.map((sk) => sk.id === id ? { ...sk, value } : sk) })),
+      setSkills: (skills) => set({ skills }),
 
       // Books
       readState: {},
-      toggleBook: (id) =>
-        set((s) => ({
-          readState: { ...s.readState, [id]: !s.readState[id] },
-        })),
+      toggleBook: (id) => set((s) => ({ readState: { ...s.readState, [id]: !s.readState[id] } })),
       setReadState: (state) => set({ readState: state }),
 
-      // Weekly review
+      // Weekly review (legacy)
       entries: [],
-      goals: [
-        "Work through one Python dataset",
-        "Read one chapter of Braiding Sweetgrass",
-      ],
+      goals: ['Work through one Python dataset', 'Read one chapter of Braiding Sweetgrass'],
       upsertEntry: (entry) =>
-        set((s) => ({
-          entries: [
-            ...s.entries.filter((e) => e.date !== entry.date),
-            entry,
-          ],
-        })),
+        set((s) => ({ entries: [...s.entries.filter((e) => e.date !== entry.date), entry] })),
       setEntries: (entries) => set({ entries }),
       addGoal: (goal) => set((s) => ({ goals: [...s.goals, goal] })),
-      removeGoal: (index) =>
-        set((s) => ({ goals: s.goals.filter((_, i) => i !== index) })),
+      removeGoal: (index) => set((s) => ({ goals: s.goals.filter((_, i) => i !== index) })),
 
       // Meta
       learningStartDate: null,
       setLearningStartDate: (date) => set({ learningStartDate: date }),
+
+      // Habits
+      habits: [],
+      setHabits: (habits) => set({ habits }),
+      setHabitDone: (id, done) =>
+        set((s) => ({ habits: s.habits.map((h) => h.id === id ? { ...h, done } : h) })),
+
+      // Goals
+      apiGoals: [],
+      setApiGoals: (apiGoals) => set({ apiGoals }),
+      upsertApiGoal: (goal) =>
+        set((s) => ({ apiGoals: [...s.apiGoals.filter((g) => g.id !== goal.id), goal] })),
+      removeApiGoal: (id) => set((s) => ({ apiGoals: s.apiGoals.filter((g) => g.id !== id) })),
+
+      // Projects
+      projects: [],
+      setProjects: (projects) => set({ projects }),
+      upsertProject: (project) =>
+        set((s) => ({ projects: [...s.projects.filter((p) => p.id !== project.id), project] })),
+      removeProject: (id) => set((s) => ({ projects: s.projects.filter((p) => p.id !== id) })),
+
+      // Tasks v1
+      tasksV1: [],
+      setTasksV1: (tasksV1) => set({ tasksV1 }),
+      upsertTaskV1: (task) =>
+        set((s) => ({ tasksV1: [...s.tasksV1.filter((t) => t.id !== task.id), task] })),
+      removeTaskV1: (id) => set((s) => ({ tasksV1: s.tasksV1.filter((t) => t.id !== id) })),
+
+      // Journal
+      journalEntries: [],
+      setJournalEntries: (journalEntries) => set({ journalEntries }),
+      upsertJournalEntry: (entry) =>
+        set((s) => ({
+          journalEntries: [...s.journalEntries.filter((e) => e.entry_date !== entry.entry_date), entry],
+        })),
+
+      // Health
+      healthLogs: [],
+      setHealthLogs: (healthLogs) => set({ healthLogs }),
+      upsertHealthLog: (log) =>
+        set((s) => ({
+          healthLogs: [...s.healthLogs.filter((l) => l.log_date !== log.log_date), log],
+        })),
+
+      // Inbox
+      inboxItems: [],
+      setInboxItems: (inboxItems) => set({ inboxItems }),
+      addInboxItem: (item) => set((s) => ({ inboxItems: [item, ...s.inboxItems] })),
+      removeInboxItem: (id) => set((s) => ({ inboxItems: s.inboxItems.filter((i) => i.id !== id) })),
+
+      // Hobbies
+      hobbies: [],
+      setHobbies: (hobbies) => set({ hobbies }),
+      upsertHobby: (hobby) =>
+        set((s) => ({ hobbies: [...s.hobbies.filter((h) => h.id !== hobby.id), hobby] })),
+      removeHobby: (id) => set((s) => ({ hobbies: s.hobbies.filter((h) => h.id !== id) })),
+
+      // Notes
+      notes: [],
+      setNotes: (notes) => set({ notes }),
+      upsertNote: (note) =>
+        set((s) => ({ notes: [...s.notes.filter((n) => n.id !== note.id), note] })),
+      removeNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
+
+      // Weekly Reviews v1
+      weeklyReviews: [],
+      setWeeklyReviews: (weeklyReviews) => set({ weeklyReviews }),
+      upsertWeeklyReview: (review) =>
+        set((s) => ({
+          weeklyReviews: [...s.weeklyReviews.filter((r) => r.week_start !== review.week_start), review],
+        })),
     }),
     {
-      name: "life-dashboard-v2",
-      // v2 key so it doesn't conflict with the old localStorage keys
+      name: 'life-dashboard-v2',
     }
   )
 );
