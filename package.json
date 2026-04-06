@@ -9,13 +9,17 @@
     "export": "next export"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "lucide-react": "^1.7.0",
     "next": "16.2.2",
     "react": "19.2.4",
     "react-circular-progressbar": "^2.2.0",
     "react-dom": "19.2.4",
+    "tailwind-merge": "^3.5.0",
     "vis-data": "^8.0.3",
-    "vis-timeline": "^8.5.0"
+    "vis-timeline": "^8.5.0",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
