@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getWeeklyReview, saveWeeklyReview } from "@/lib/api";
 
 type ReviewEntry = {
   date: string; // YYYY-MM-DD
@@ -20,24 +21,39 @@ export default function WeeklyReview() {
   const [entries, setEntries] = useState<ReviewEntry[]>([]);
   const [streak, setStreak] = useState(0);
 
-  // Load saved data from localStorage
+  // Load saved data: API first, then localStorage
   useEffect(() => {
-    const savedEntries = localStorage.getItem("weekly-review-entries");
-    if (savedEntries) {
-      try {
-        setEntries(JSON.parse(savedEntries));
-      } catch (e) {
-        console.error("Failed to parse saved entries", e);
+    async function load() {
+      const remote = await getWeeklyReview();
+      if (remote !== null) {
+        const mapped: ReviewEntry[] = remote.map((e) => ({
+          date: e.entry_date,
+          hours: e.hours,
+          reflection: e.reflection ?? "",
+          goals: Array.isArray(e.goals) ? e.goals : [],
+        }));
+        setEntries(mapped);
+        localStorage.setItem("weekly-review-entries", JSON.stringify(mapped));
+      } else {
+        const savedEntries = localStorage.getItem("weekly-review-entries");
+        if (savedEntries) {
+          try {
+            setEntries(JSON.parse(savedEntries));
+          } catch (e) {
+            console.error("Failed to parse saved entries", e);
+          }
+        }
+      }
+      const savedGoals = localStorage.getItem("weekly-review-goals");
+      if (savedGoals) {
+        try {
+          setGoals(JSON.parse(savedGoals));
+        } catch (e) {
+          console.error("Failed to parse saved goals", e);
+        }
       }
     }
-    const savedGoals = localStorage.getItem("weekly-review-goals");
-    if (savedGoals) {
-      try {
-        setGoals(JSON.parse(savedGoals));
-      } catch (e) {
-        console.error("Failed to parse saved goals", e);
-      }
-    }
+    load();
   }, []);
 
   // Calculate streak (consecutive days with at least 0.5h study)
@@ -83,6 +99,7 @@ export default function WeeklyReview() {
     };
     const updatedEntries = [...entries.filter((e) => e.date !== today), newEntry];
     saveEntries(updatedEntries);
+    saveWeeklyReview(today, hours, reflection, [...goals]);
     setHours(0);
     setReflection("");
     alert("Review saved for today!");

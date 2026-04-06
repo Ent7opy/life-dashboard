@@ -1,43 +1,75 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Task } from "@/data/roadmap";
+import { getTasks, createTask, updateTask, ApiTask } from "@/lib/api";
 
 interface TaskListProps {
   tasks: Task[];
 }
 
 export default function TaskList({ tasks }: TaskListProps) {
-  // Initialize state from localStorage or default completed status
   const [taskState, setTaskState] = useState<Record<string, boolean>>({});
+  // Maps local task.id → API UUID for updates
+  const apiIdMap = useRef<Record<string, string>>({});
 
   useEffect(() => {
-    const saved = localStorage.getItem("task-state");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setTaskState(parsed);
-      } catch (e) {
-        // Fallback to default
-        const defaultState = tasks.reduce(
-          (acc, task) => ({ ...acc, [task.id]: task.completed }),
-          {}
+    async function load() {
+      const remote = await getTasks();
+      if (remote !== null) {
+        const state: Record<string, boolean> = {};
+        const idMap: Record<string, string> = {};
+        for (const t of remote) {
+          if (t.phase_id) {
+            state[t.phase_id] = t.completed;
+            idMap[t.phase_id] = t.id;
+          }
+        }
+        apiIdMap.current = idMap;
+        // Merge with defaults for any tasks not yet in API
+        const merged = tasks.reduce(
+          (acc, task) => ({ ...acc, [task.id]: task.completed, ...state }),
+          {} as Record<string, boolean>
         );
-        setTaskState(defaultState);
+        setTaskState(merged);
+        localStorage.setItem("task-state", JSON.stringify(merged));
+        return;
       }
-    } else {
-      const defaultState = tasks.reduce(
-        (acc, task) => ({ ...acc, [task.id]: task.completed }),
-        {}
+      const saved = localStorage.getItem("task-state");
+      if (saved) {
+        try {
+          setTaskState(JSON.parse(saved));
+          return;
+        } catch {
+          // fall through to default
+        }
+      }
+      setTaskState(
+        tasks.reduce((acc, task) => ({ ...acc, [task.id]: task.completed }), {})
       );
-      setTaskState(defaultState);
     }
+    load();
   }, [tasks]);
 
-  const toggleTask = (id: string) => {
-    const newState = { ...taskState, [id]: !taskState[id] };
+  const toggleTask = async (id: string) => {
+    const newCompleted = !taskState[id];
+    const newState = { ...taskState, [id]: newCompleted };
     setTaskState(newState);
     localStorage.setItem("task-state", JSON.stringify(newState));
+
+    const apiId = apiIdMap.current[id];
+    if (apiId) {
+      updateTask(apiId, newCompleted);
+    } else {
+      const task = tasks.find((t) => t.id === id);
+      if (task) {
+        const created = await createTask(task.label, id);
+        if (created) {
+          apiIdMap.current[id] = created.id;
+          updateTask(created.id, newCompleted);
+        }
+      }
+    }
   };
 
   const completedCount = Object.values(taskState).filter(Boolean).length;
@@ -73,7 +105,7 @@ export default function TaskList({ tasks }: TaskListProps) {
         ))}
       </ul>
       <div className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
-        Check off tasks as you complete them. Progress is saved in your browser.
+        Check off tasks as you complete them. Progress syncs to API when configured.
       </div>
     </div>
   );

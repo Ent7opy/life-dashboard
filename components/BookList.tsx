@@ -2,28 +2,43 @@
 
 import { useState, useEffect } from "react";
 import { books } from "@/data/books";
+import { getReading, upsertReading } from "@/lib/api";
 
 export default function BookList() {
   const [readState, setReadState] = useState<Record<string, boolean>>({});
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
   useEffect(() => {
-    const saved = localStorage.getItem("book-read-state");
-    if (saved) {
-      try {
-        setReadState(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse saved book state", e);
+    async function load() {
+      const remote = await getReading();
+      if (remote !== null) {
+        const state: Record<string, boolean> = {};
+        for (const entry of remote) {
+          state[entry.book_id] = entry.status === "completed";
+        }
+        setReadState(state);
+        localStorage.setItem("book-read-state", JSON.stringify(state));
+        return;
+      }
+      const saved = localStorage.getItem("book-read-state");
+      if (saved) {
+        try {
+          setReadState(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to parse saved book state", e);
+        }
       }
     }
+    load();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("book-read-state", JSON.stringify(readState));
-  }, [readState]);
-
   const toggleRead = (id: string) => {
-    setReadState((prev) => ({ ...prev, [id]: !prev[id] }));
+    setReadState((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      localStorage.setItem("book-read-state", JSON.stringify(next));
+      upsertReading(id, next[id] ? "completed" : "unread");
+      return next;
+    });
   };
 
   const categories = ["All", ...Array.from(new Set(books.map((b) => b.category)))];

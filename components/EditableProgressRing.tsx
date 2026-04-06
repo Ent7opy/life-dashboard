@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
+import { getProgress, updateProgress } from "@/lib/api";
 
 interface EditableProgressRingProps {
   label: string;
@@ -21,21 +22,25 @@ export default function EditableProgressRing({
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(initialValue);
 
-  // Load saved value from localStorage on mount
+  // Load saved value: API first, then localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(`progress-${id}`);
-    if (saved !== null) {
-      const parsed = parseInt(saved, 10);
-      if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
-        setValue(parsed);
+    async function load() {
+      const remote = await getProgress();
+      if (remote !== null && remote[id] !== undefined) {
+        setValue(remote[id]);
+        localStorage.setItem(`progress-${id}`, remote[id].toString());
+        return;
+      }
+      const saved = localStorage.getItem(`progress-${id}`);
+      if (saved !== null) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+          setValue(parsed);
+        }
       }
     }
+    load();
   }, [id]);
-
-  // Save to localStorage when value changes
-  useEffect(() => {
-    localStorage.setItem(`progress-${id}`, value.toString());
-  }, [id, value]);
 
   const handleRingClick = () => {
     setTempValue(value);
@@ -48,6 +53,8 @@ export default function EditableProgressRing({
 
   const handleSave = () => {
     setValue(tempValue);
+    localStorage.setItem(`progress-${id}`, tempValue.toString());
+    updateProgress(id, tempValue);
     setIsEditing(false);
   };
 
