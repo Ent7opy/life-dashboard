@@ -1,31 +1,94 @@
-// Life OS API client
-// Reads api-url and api-key from localStorage.
-// All functions return null gracefully when API is unconfigured or unavailable.
+// Life OS API client — Canopy
+import type { AuthUser } from '@/store/authStore';
 
-function getConfig(): { url: string; key: string } | null {
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+
+function getToken(): string | null {
   if (typeof window === 'undefined') return null;
-  const url = localStorage.getItem('api-url')?.trim().replace(/\/$/, '');
-  if (!url) return null;
-  const key = localStorage.getItem('api-key')?.trim() ?? '';
-  return { url, key };
+  try {
+    const stored = localStorage.getItem('canopy-auth');
+    if (!stored) return null;
+    return JSON.parse(stored)?.state?.token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T | null> {
-  const config = getConfig();
-  if (!config) return null;
+  const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(config.key ? { 'x-api-key': config.key } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers as Record<string, string>),
   };
   try {
-    const res = await fetch(`${config.url}${path}`, { ...options, headers });
+    const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+    if (res.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('canopy-auth');
+        window.location.href = '/login';
+      }
+      return null;
+    }
     if (!res.ok) return null;
     if (res.status === 204) return null;
     return res.json() as Promise<T>;
   } catch {
     return null;
   }
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+
+export async function authRegister(
+  email: string,
+  password: string,
+  display_name?: string
+): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/v1/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, display_name }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Registration failed');
+  return data;
+}
+
+export async function authLogin(
+  email: string,
+  password: string
+): Promise<{ token: string; user: AuthUser }> {
+  const res = await fetch(`${API_URL}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Login failed');
+  return data;
+}
+
+export async function authForgotPassword(email: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/v1/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed');
+  return data;
+}
+
+export async function authResetPassword(token: string, password: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/v1/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed');
+  return data;
 }
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Lora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import { AppShell } from "@/components/AppShell";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -27,9 +27,8 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "vanyo. — Green Tech Journey",
-  description:
-    "Using what I already know — software, systems, data — to work on climate tech, clean energy, and sustainable infrastructure.",
+  title: "Canopy",
+  description: "your life, tended carefully",
 };
 
 export default function RootLayout({
@@ -86,9 +85,7 @@ export default function RootLayout({
           </svg>
         </div>
 
-        <Sidebar />
-
-        <main className="ml-[200px] min-h-screen">{children}</main>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
