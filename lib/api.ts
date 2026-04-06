@@ -204,50 +204,6 @@ export interface ApiDashboard {
   };
 }
 
-// ─── LEGACY (v0) ──────────────────────────────────────────────────────────────
-
-export interface ApiReadingEntry {
-  id: string;
-  book_id: string;
-  status: 'unread' | 'reading' | 'completed';
-}
-
-export interface ApiWeeklyEntry {
-  id: string;
-  entry_date: string;
-  hours: number;
-  reflection: string;
-  goals: string[];
-}
-
-export async function getProgress(): Promise<Record<string, number> | null> {
-  return apiFetch<Record<string, number>>('/api/progress');
-}
-export async function updateProgress(category_id: string, value: number): Promise<void> {
-  await apiFetch('/api/progress', { method: 'PUT', body: JSON.stringify({ category_id, value }) });
-}
-export async function getReading(): Promise<ApiReadingEntry[] | null> {
-  return apiFetch<ApiReadingEntry[]>('/api/reading');
-}
-export async function upsertReading(book_id: string, status: 'unread' | 'reading' | 'completed'): Promise<void> {
-  await apiFetch('/api/reading', { method: 'POST', body: JSON.stringify({ book_id, status }) });
-}
-export async function getWeeklyReview(): Promise<ApiWeeklyEntry[] | null> {
-  return apiFetch<ApiWeeklyEntry[]>('/api/weekly-review');
-}
-export async function saveWeeklyReview(entry_date: string, hours: number, reflection: string, goals: string[]): Promise<void> {
-  await apiFetch('/api/weekly-review', { method: 'POST', body: JSON.stringify({ entry_date, hours, reflection, goals }) });
-}
-export async function getTasks(): Promise<ApiTask[] | null> {
-  return apiFetch<ApiTask[]>('/api/tasks');
-}
-export async function createTask(label: string, phase_id: string): Promise<ApiTask | null> {
-  return apiFetch<ApiTask>('/api/tasks', { method: 'POST', body: JSON.stringify({ label, phase_id }) });
-}
-export async function updateTask(id: string, completed: boolean): Promise<void> {
-  await apiFetch(`/api/tasks/${id}`, { method: 'PUT', body: JSON.stringify({ completed }) });
-}
-
 // ─── v1: USER ─────────────────────────────────────────────────────────────────
 
 export async function getUser(): Promise<ApiUser | null> {

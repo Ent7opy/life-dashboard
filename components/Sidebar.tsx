@@ -5,16 +5,22 @@ import Link from "next/link";
 import { Settings } from "lucide-react";
 
 const sections = [
-  { id: "now", label: "Now" },
-  { id: "learning", label: "Learning" },
-  { id: "skills", label: "Skills" },
-  { id: "projects", label: "Projects" },
-  { id: "reading", label: "Reading" },
-  { id: "review", label: "Review" },
+  { id: "inbox",   label: "Inbox"         },
+  { id: "now",     label: "Now"           },
+  { id: "habits",  label: "Habits"        },
+  { id: "journal", label: "Journal"       },
+  { id: "health",  label: "Health"        },
+  { id: "goals",   label: "Goals"         },
+  { id: "projects",label: "Projects"      },
+  { id: "skills",  label: "Skills"        },
+  { id: "learning",label: "Learning"      },
+  { id: "hobbies", label: "Hobbies"       },
+  { id: "reading", label: "Reading"       },
+  { id: "review",  label: "Weekly Review" },
 ];
 
 export default function Sidebar() {
-  const [activeSection, setActiveSection] = useState("now");
+  const [activeSection, setActiveSection] = useState("inbox");
 
   // Track active section via IntersectionObserver
   useEffect(() => {
@@ -42,11 +48,10 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[200px] border-r border-[#c8b99a] bg-[#f7f3e9] flex flex-col p-8 z-40">
+    <aside className="fixed left-0 top-0 h-screen w-[200px] border-r border-[#c8b99a] bg-[#f7f3e9] flex flex-col p-8 z-40 overflow-y-auto">
       {/* Wordmark */}
-      <div className="mb-12 flex flex-col gap-2">
+      <div className="mb-10 flex flex-col gap-2 flex-shrink-0">
         <div className="w-9 h-9 border border-[#3d6b4f] rounded-full flex items-center justify-center opacity-80">
-          {/* Compass SVG — inline so it renders without a Lucide dep mismatch */}
           <svg
             width="18"
             height="18"
@@ -67,14 +72,14 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-col gap-3">
+      <nav className="flex flex-col gap-2.5 flex-1 min-h-0">
         {sections.map(({ id, label }) => {
           const isActive = activeSection === id;
           return (
             <button
               key={id}
               onClick={() => scrollTo(id)}
-              className={`flex items-center gap-2.5 text-[15px] font-reading text-left transition-colors duration-200 ${
+              className={`flex items-center gap-2.5 text-[14px] font-reading text-left transition-colors duration-200 ${
                 isActive
                   ? "text-[#3d6b4f] font-semibold"
                   : "text-[#5c5540] hover:text-[#3d6b4f]"
@@ -90,20 +95,20 @@ export default function Sidebar() {
           );
         })}
 
-        <div className="mt-6 pt-6 border-t border-[#e8dfc9]">
+        <div className="mt-4 pt-4 border-t border-[#e8dfc9] flex-shrink-0">
           <Link
             href="/settings"
-            className="flex items-center gap-2.5 text-[14px] text-[#5c5540] hover:text-[#3d6b4f] transition-colors duration-200 font-reading"
+            className="flex items-center gap-2.5 text-[13px] text-[#5c5540] hover:text-[#3d6b4f] transition-colors duration-200 font-reading"
           >
-            <Settings size={14} strokeWidth={1.8} />
+            <Settings size={13} strokeWidth={1.8} />
             Settings
           </Link>
         </div>
       </nav>
 
       {/* Footer quote */}
-      <div className="mt-auto">
-        <p className="text-[11px] text-[#9c8f78] italic leading-relaxed font-reading">
+      <div className="mt-4 flex-shrink-0">
+        <p className="text-[10px] text-[#9c8f78] italic leading-relaxed font-reading">
           Learning in public ·<br />
           Building for the planet
         </p>

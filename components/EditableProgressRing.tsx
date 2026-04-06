@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-import { getProgress, updateProgress } from "@/lib/api";
+import { getSkills, patchSkill } from "@/lib/api";
 
 interface EditableProgressRingProps {
   label: string;
@@ -22,14 +22,16 @@ export default function EditableProgressRing({
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(initialValue);
 
-  // Load saved value: API first, then localStorage
+  // Load saved value from v1 skills API
   useEffect(() => {
     async function load() {
-      const remote = await getProgress();
-      if (remote !== null && remote[id] !== undefined) {
-        setValue(remote[id]);
-        localStorage.setItem(`progress-${id}`, remote[id].toString());
-        return;
+      const skills = await getSkills();
+      if (skills) {
+        const skill = skills.find((s) => s.id === id);
+        if (skill !== undefined) {
+          setValue(skill.value);
+          return;
+        }
       }
       const saved = localStorage.getItem(`progress-${id}`);
       if (saved !== null) {
@@ -54,7 +56,7 @@ export default function EditableProgressRing({
   const handleSave = () => {
     setValue(tempValue);
     localStorage.setItem(`progress-${id}`, tempValue.toString());
-    updateProgress(id, tempValue);
+    patchSkill(id, { value: tempValue });
     setIsEditing(false);
   };
 
@@ -89,15 +91,9 @@ export default function EditableProgressRing({
             </h3>
             <div className="mt-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                  0%
-                </span>
-                <span className="text-2xl font-bold" style={{ color }}>
-                  {tempValue}%
-                </span>
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                  100%
-                </span>
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">0%</span>
+                <span className="text-2xl font-bold" style={{ color }}>{tempValue}%</span>
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">100%</span>
               </div>
               <input
                 type="range"

@@ -1,15 +1,24 @@
 "use client";
 
-import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useDashboard } from "@/hooks/useDashboard";
 import FernDivider from "@/components/FernDivider";
 
 export function NowSection() {
-  const { booksRead, daysLearning, activeProjects } = useDashboardStats();
+  const { dashboard } = useDashboard();
 
   const kpis = [
-    { val: String(daysLearning), label: "days learning" },
-    { val: String(booksRead),    label: "books read"    },
-    { val: String(activeProjects), label: "projects active" },
+    {
+      val: dashboard ? String(dashboard.snapshot.active_projects) : "—",
+      label: "projects active",
+    },
+    {
+      val: dashboard ? String(dashboard.snapshot.active_goals) : "—",
+      label: "active goals",
+    },
+    {
+      val: dashboard ? String(dashboard.snapshot.resources_active) : "—",
+      label: "resources in progress",
+    },
   ];
 
   return (

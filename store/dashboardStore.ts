@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { defaultSkills, type Skill } from '@/data/greentech';
+import type { ApiSkill } from '@/lib/api';
 import type {
   ApiHabit,
   ApiGoal,
@@ -14,39 +14,13 @@ import type {
   ApiWeeklyReview,
 } from '@/lib/api';
 
-// ── Shared types ──────────────────────────────────────────────────────────────
-
-export type ReviewEntry = {
-  date: string;
-  hours: number;
-  reflection: string;
-  goals: string[];
-};
-
 // ── Store shape ───────────────────────────────────────────────────────────────
 
 interface DashboardState {
   // ── Skills ──────────────────────────────────────────────────────────────
-  skills: Skill[];
+  skills: ApiSkill[];
   setSkillValue: (id: string, value: number) => void;
-  setSkills: (skills: Skill[]) => void;
-
-  // ── Books (legacy reading state) ────────────────────────────────────────
-  readState: Record<string, boolean>;
-  toggleBook: (id: string) => void;
-  setReadState: (state: Record<string, boolean>) => void;
-
-  // ── Weekly review (legacy) ───────────────────────────────────────────────
-  entries: ReviewEntry[];
-  goals: string[];
-  upsertEntry: (entry: ReviewEntry) => void;
-  setEntries: (entries: ReviewEntry[]) => void;
-  addGoal: (goal: string) => void;
-  removeGoal: (index: number) => void;
-
-  // ── Meta ─────────────────────────────────────────────────────────────────
-  learningStartDate: string | null;
-  setLearningStartDate: (date: string) => void;
+  setSkills: (skills: ApiSkill[]) => void;
 
   // ── Habits ───────────────────────────────────────────────────────────────
   habits: ApiHabit[];
@@ -111,28 +85,10 @@ export const useDashboardStore = create<DashboardState>()(
   persist(
     (set) => ({
       // Skills
-      skills: defaultSkills,
+      skills: [],
       setSkillValue: (id, value) =>
         set((s) => ({ skills: s.skills.map((sk) => sk.id === id ? { ...sk, value } : sk) })),
       setSkills: (skills) => set({ skills }),
-
-      // Books
-      readState: {},
-      toggleBook: (id) => set((s) => ({ readState: { ...s.readState, [id]: !s.readState[id] } })),
-      setReadState: (state) => set({ readState: state }),
-
-      // Weekly review (legacy)
-      entries: [],
-      goals: ['Work through one Python dataset', 'Read one chapter of Braiding Sweetgrass'],
-      upsertEntry: (entry) =>
-        set((s) => ({ entries: [...s.entries.filter((e) => e.date !== entry.date), entry] })),
-      setEntries: (entries) => set({ entries }),
-      addGoal: (goal) => set((s) => ({ goals: [...s.goals, goal] })),
-      removeGoal: (index) => set((s) => ({ goals: s.goals.filter((_, i) => i !== index) })),
-
-      // Meta
-      learningStartDate: null,
-      setLearningStartDate: (date) => set({ learningStartDate: date }),
 
       // Habits
       habits: [],

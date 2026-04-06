@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Task } from "@/data/roadmap";
-import { getTasks, createTask, updateTask, ApiTask } from "@/lib/api";
+import { getTasksV1, createTaskV1, patchTaskV1 } from "@/lib/api";
 
 interface TaskListProps {
   tasks: Task[];
@@ -15,7 +15,7 @@ export default function TaskList({ tasks }: TaskListProps) {
 
   useEffect(() => {
     async function load() {
-      const remote = await getTasks();
+      const remote = await getTasksV1();
       if (remote !== null) {
         const state: Record<string, boolean> = {};
         const idMap: Record<string, string> = {};
@@ -59,14 +59,14 @@ export default function TaskList({ tasks }: TaskListProps) {
 
     const apiId = apiIdMap.current[id];
     if (apiId) {
-      updateTask(apiId, newCompleted);
+      patchTaskV1(apiId, { completed: newCompleted });
     } else {
       const task = tasks.find((t) => t.id === id);
       if (task) {
-        const created = await createTask(task.label, id);
+        const created = await createTaskV1({ title: task.label });
         if (created) {
           apiIdMap.current[id] = created.id;
-          updateTask(created.id, newCompleted);
+          patchTaskV1(created.id, { completed: newCompleted });
         }
       }
     }

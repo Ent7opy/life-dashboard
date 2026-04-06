@@ -1,12 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { NowSection }      from "@/components/sections/NowSection";
-import { LearningSection } from "@/components/sections/LearningSection";
-import { SkillsSection }   from "@/components/sections/SkillsSection";
-import { ProjectsSection } from "@/components/sections/ProjectsSection";
-import BookList    from "@/components/BookList";
-import WeeklyReview from "@/components/WeeklyReview";
+import { InboxSection }       from "@/components/sections/InboxSection";
+import { NowSection }         from "@/components/sections/NowSection";
+import { HabitsSection }      from "@/components/sections/HabitsSection";
+import { JournalSection }     from "@/components/sections/JournalSection";
+import { HealthSection }      from "@/components/sections/HealthSection";
+import { GoalsSection }       from "@/components/sections/GoalsSection";
+import { ProjectsSection }    from "@/components/sections/ProjectsSection";
+import { SkillsSection }      from "@/components/sections/SkillsSection";
+import { LearningSection }    from "@/components/sections/LearningSection";
+import { HobbiesSection }     from "@/components/sections/HobbiesSection";
+import { ResourcesSection }   from "@/components/sections/ResourcesSection";
+import { WeeklyReviewSection } from "@/components/sections/WeeklyReviewSection";
 
 export default function Home() {
   // Guard against Zustand persist / localStorage hydration mismatches on SSR.
@@ -17,18 +23,18 @@ export default function Home() {
   return (
     <div className="min-h-screen flex justify-center py-20">
       <div className="w-full max-w-[780px] px-8">
+        <InboxSection />
         <NowSection />
-        <LearningSection />
-        <SkillsSection />
+        <HabitsSection />
+        <JournalSection />
+        <HealthSection />
+        <GoalsSection />
         <ProjectsSection />
-
-        <section id="reading" className="mb-16 scroll-mt-20">
-          <BookList />
-        </section>
-
-        <section id="review" className="pb-32 scroll-mt-20">
-          <WeeklyReview />
-        </section>
+        <SkillsSection />
+        <LearningSection />
+        <HobbiesSection />
+        <ResourcesSection />
+        <WeeklyReviewSection />
       </div>
     </div>
   );
