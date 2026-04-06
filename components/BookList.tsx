@@ -1,8 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { BookOpen, Check } from "lucide-react";
 import { books } from "@/data/books";
 import { getReading, upsertReading } from "@/lib/api";
+
+const borderColor: Record<string, string> = {
+  reading: "#c07d2e",
+  done:    "#3d6b4f",
+  unread:  "#e8dfc9",
+};
 
 export default function BookList() {
   const [readState, setReadState] = useState<Record<string, boolean>>({});
@@ -22,11 +29,7 @@ export default function BookList() {
       }
       const saved = localStorage.getItem("book-read-state");
       if (saved) {
-        try {
-          setReadState(JSON.parse(saved));
-        } catch (e) {
-          console.error("Failed to parse saved book state", e);
-        }
+        try { setReadState(JSON.parse(saved)); } catch { /* ignore */ }
       }
     }
     load();
@@ -42,122 +45,108 @@ export default function BookList() {
   };
 
   const categories = ["All", ...Array.from(new Set(books.map((b) => b.category)))];
-
-  const filteredBooks =
-    selectedCategory === "All"
-      ? books
-      : books.filter((b) => b.category === selectedCategory);
+  const filtered =
+    selectedCategory === "All" ? books : books.filter((b) => b.category === selectedCategory);
 
   const totalBooks = books.length;
-  const readBooks = Object.values(readState).filter(Boolean).length;
-  const percentage = totalBooks > 0 ? Math.round((readBooks / totalBooks) * 100) : 0;
+  const readCount = Object.values(readState).filter(Boolean).length;
+  const pct = totalBooks > 0 ? Math.round((readCount / totalBooks) * 100) : 0;
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-          📚 Reading List
-        </h2>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-          Curated books for environment & energy studies. Mark as read as you progress.
-        </p>
+    <div>
+      {/* Section header */}
+      <div className="flex items-center gap-3 mb-8">
+        <BookOpen className="text-forest flex-shrink-0" size={20} strokeWidth={1.8} />
+        <h3 className="text-[22px] font-semibold text-ink font-display">Reading</h3>
       </div>
 
-      {/* Progress & Filter */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="text-sm text-zinc-600 dark:text-zinc-400">
-            Reading progress
-          </div>
-          <div className="mt-1 flex items-center gap-3">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+      {/* Progress bar + filter row */}
+      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-1.5">
+            {/* Slim organic progress bar */}
+            <div className="flex-1 h-1 rounded-full bg-bark-subtle overflow-hidden">
               <div
-                className="h-full rounded-full bg-blue-600 transition-all duration-300"
-                style={{ width: `${percentage}%` }}
+                className="h-full rounded-full bg-amber-sol transition-all duration-500"
+                style={{ width: `${pct}%` }}
               />
             </div>
-            <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-              {readBooks}/{totalBooks} ({percentage}%)
+            <span className="font-data text-[12px] text-ink-3 flex-shrink-0">
+              {readCount} of {totalBooks}
             </span>
+            <span className="font-data text-[11px] text-amber-sol flex-shrink-0">●</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="category" className="text-sm text-zinc-700 dark:text-zinc-300">
-            Filter by:
-          </label>
-          <select
-            id="category"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+
+        {/* Category pills */}
+        <div className="flex flex-wrap gap-1.5">
+          {categories.slice(0, 5).map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3 py-1 rounded-full font-data text-[11px] border transition-colors duration-150 ${
+                selectedCategory === cat
+                  ? "bg-forest border-forest text-surface"
+                  : "border-bark text-ink-2 hover:border-forest hover:text-forest"
+              }`}
+            >
+              {cat === "All" ? "All" : cat.split("&")[0].trim()}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Books grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredBooks.map((book) => {
-          const isRead = readState[book.id] || false;
+      {/* Book rows */}
+      <div className="space-y-0.5">
+        {filtered.map((book) => {
+          const isRead = readState[book.id] ?? false;
+          const status = isRead ? "done" : "unread";
+
           return (
             <div
               key={book.id}
-              className={`rounded-lg border p-4 transition-all ${
-                isRead
-                  ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-900/30"
-                  : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
-              }`}
+              className="group flex items-center justify-between px-3 py-3.5 rounded-sm transition-colors duration-150 hover:bg-surface-2"
+              style={{ borderLeft: `3px solid ${borderColor[status]}` }}
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {book.title}
-                  </h3>
-                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                    {book.author} {book.year && `· ${book.year}`}
-                  </p>
-                  <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
-                    {book.description}
-                  </p>
-                  <span className="mt-2 inline-block rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                    {book.category}
-                  </span>
+              <div className="pl-3 min-w-0">
+                <div
+                  className={`text-[15px] font-medium leading-snug font-reading truncate ${
+                    isRead ? "text-ink-3 line-through" : "text-ink"
+                  }`}
+                >
+                  {book.title}
                 </div>
+                <div className="font-data text-[11px] text-ink-3 mt-0.5 truncate">
+                  {book.author}
+                  {book.year ? ` · ${book.year}` : ""}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 flex-shrink-0 pl-4">
+                <span className="font-data text-[10px] border border-bark-subtle px-2 py-0.5 rounded-full text-ink-3 hidden sm:block">
+                  {book.category.split("&")[0].trim().split(" ")[0]}
+                </span>
                 <button
                   onClick={() => toggleRead(book.id)}
-                  className={`ml-2 flex h-8 w-8 items-center justify-center rounded-full ${
-                    isRead
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-                      : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
-                  }`}
                   aria-label={isRead ? "Mark as unread" : "Mark as read"}
+                  className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-150 ${
+                    isRead
+                      ? "bg-forest border-forest"
+                      : "border-bark group-hover:border-forest"
+                  }`}
                 >
-                  {isRead ? "✓" : "+"}
+                  {isRead && <Check size={10} color="#fefcf5" strokeWidth={3} />}
                 </button>
-              </div>
-              <div className="mt-4 flex justify-between text-xs text-zinc-500 dark:text-zinc-500">
-                <span>{book.category}</span>
-                <span>{isRead ? "Read" : "Unread"}</span>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
-        <p>
-          Progress is saved in your browser. Add your own books by editing{" "}
-          <code className="rounded bg-zinc-100 px-1 py-0.5 dark:bg-zinc-800">
-            data/books.ts
-          </code>
-          .
-        </p>
-      </div>
+      <p className="mt-6 font-data text-[11px] text-ink-3 italic">
+        Curated for environment, energy & systems thinking.
+        Progress syncs to API when configured.
+      </p>
     </div>
   );
 }

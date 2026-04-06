@@ -1,27 +1,85 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Sun, Plus, X, Leaf } from "lucide-react";
 import { getWeeklyReview, saveWeeklyReview } from "@/lib/api";
 
 type ReviewEntry = {
-  date: string; // YYYY-MM-DD
+  date: string;
   hours: number;
   reflection: string;
   goals: string[];
 };
 
+// ── Sparkline ─────────────────────────────────────────────────────────────────
+function Sparkline({ entries }: { entries: ReviewEntry[] }) {
+  const last30 = [...entries].sort((a, b) => a.date.localeCompare(b.date)).slice(-30);
+  if (last30.length < 2) return null;
+
+  const maxH = Math.max(...last30.map((e) => e.hours), 1);
+  const W = 700;
+  const H = 80;
+  const step = W / (last30.length - 1);
+
+  const points = last30.map((e, i) => ({
+    x: i * step,
+    y: H - (e.hours / maxH) * H * 0.85,
+  }));
+
+  const pathD = points
+    .map((p, i) =>
+      i === 0 ? `M ${p.x},${p.y}` : `Q ${(points[i - 1].x + p.x) / 2},${points[i - 1].y} ${p.x},${p.y}`
+    )
+    .join(" ");
+
+  const fillD = `${pathD} L ${points[points.length - 1].x},${H} L 0,${H} Z`;
+  const todayPt = points[points.length - 1];
+
+  return (
+    <div className="mb-10">
+      <svg className="w-full overflow-visible" viewBox={`0 0 ${W} ${H + 20}`} style={{ height: "90px" }}>
+        {/* Fill */}
+        <path d={fillD} fill="#3d6b4f" fillOpacity="0.08" />
+        {/* Line — slightly hand-drawn feel via quadratic bezier */}
+        <path d={pathD} fill="none" stroke="#3d6b4f" strokeWidth="2.2" strokeLinecap="round" />
+        {/* Today dot */}
+        <circle cx={todayPt.x} cy={todayPt.y} r="4.5" fill="#c07d2e" />
+        {/* Day labels */}
+        {[0, 7, 14, 21, 29].map((idx) => {
+          const pt = points[Math.min(idx, points.length - 1)];
+          return (
+            <text
+              key={idx}
+              x={pt?.x ?? 0}
+              y={H + 16}
+              textAnchor="middle"
+              fontSize="9"
+              fontFamily="var(--font-jetbrains)"
+              fill="#9c8f78"
+            >
+              {last30[Math.min(idx, last30.length - 1)]?.date.slice(5) ?? ""}
+            </text>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 export default function WeeklyReview() {
   const [hours, setHours] = useState(0);
   const [reflection, setReflection] = useState("");
   const [goal, setGoal] = useState("");
   const [goals, setGoals] = useState<string[]>([
-    "Complete one math chapter",
-    "30 minutes of German",
+    "Work through one Python dataset",
+    "Read one chapter of Braiding Sweetgrass",
   ]);
   const [entries, setEntries] = useState<ReviewEntry[]>([]);
   const [streak, setStreak] = useState(0);
+  const [saved, setSaved] = useState(false);
 
-  // Load saved data: API first, then localStorage
+  // Load
   useEffect(() => {
     async function load() {
       const remote = await getWeeklyReview();
@@ -35,141 +93,128 @@ export default function WeeklyReview() {
         setEntries(mapped);
         localStorage.setItem("weekly-review-entries", JSON.stringify(mapped));
       } else {
-        const savedEntries = localStorage.getItem("weekly-review-entries");
-        if (savedEntries) {
-          try {
-            setEntries(JSON.parse(savedEntries));
-          } catch (e) {
-            console.error("Failed to parse saved entries", e);
-          }
+        const saved = localStorage.getItem("weekly-review-entries");
+        if (saved) {
+          try { setEntries(JSON.parse(saved)); } catch { /* ignore */ }
         }
       }
       const savedGoals = localStorage.getItem("weekly-review-goals");
       if (savedGoals) {
-        try {
-          setGoals(JSON.parse(savedGoals));
-        } catch (e) {
-          console.error("Failed to parse saved goals", e);
-        }
+        try { setGoals(JSON.parse(savedGoals)); } catch { /* ignore */ }
       }
     }
     load();
   }, []);
 
-  // Calculate streak (consecutive days with at least 0.5h study)
+  // Streak
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
-    const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date));
-    let currentStreak = 0;
-    let expectedDate = today;
-
-    for (const entry of sortedEntries) {
-      if (entry.date !== expectedDate) break;
+    const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+    let count = 0;
+    let expected = today;
+    for (const entry of sorted) {
+      if (entry.date !== expected) break;
       if (entry.hours >= 0.5) {
-        currentStreak++;
-        // Move to previous day
-        const prev = new Date(expectedDate);
+        count++;
+        const prev = new Date(expected);
         prev.setDate(prev.getDate() - 1);
-        expectedDate = prev.toISOString().split("T")[0];
-      } else {
-        break;
-      }
+        expected = prev.toISOString().split("T")[0];
+      } else break;
     }
-    setStreak(currentStreak);
+    setStreak(count);
   }, [entries]);
 
-  const saveEntries = (newEntries: ReviewEntry[]) => {
-    setEntries(newEntries);
-    localStorage.setItem("weekly-review-entries", JSON.stringify(newEntries));
+  const persistEntries = (updated: ReviewEntry[]) => {
+    setEntries(updated);
+    localStorage.setItem("weekly-review-entries", JSON.stringify(updated));
   };
 
-  const saveGoals = (newGoals: string[]) => {
-    setGoals(newGoals);
-    localStorage.setItem("weekly-review-goals", JSON.stringify(newGoals));
+  const persistGoals = (updated: string[]) => {
+    setGoals(updated);
+    localStorage.setItem("weekly-review-goals", JSON.stringify(updated));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const today = new Date().toISOString().split("T")[0];
-    const newEntry: ReviewEntry = {
-      date: today,
-      hours,
-      reflection,
-      goals: [...goals],
-    };
-    const updatedEntries = [...entries.filter((e) => e.date !== today), newEntry];
-    saveEntries(updatedEntries);
+    const newEntry: ReviewEntry = { date: today, hours, reflection, goals: [...goals] };
+    persistEntries([...entries.filter((e) => e.date !== today), newEntry]);
     saveWeeklyReview(today, hours, reflection, [...goals]);
     setHours(0);
     setReflection("");
-    alert("Review saved for today!");
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
   };
 
   const addGoal = () => {
     if (goal.trim()) {
-      const updated = [...goals, goal.trim()];
-      saveGoals(updated);
+      persistGoals([...goals, goal.trim()]);
       setGoal("");
     }
   };
 
-  const removeGoal = (index: number) => {
-    const updated = goals.filter((_, i) => i !== index);
-    saveGoals(updated);
-  };
-
-  const todayEntry = entries.find((e) => e.date === new Date().toISOString().split("T")[0]);
+  const weekTotal = entries
+    .filter((e) => {
+      const d = new Date(e.date);
+      const now = new Date();
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return d >= weekAgo;
+    })
+    .reduce((s, e) => s + e.hours, 0);
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <h2 className="mb-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-        📅 Weekly Review
-      </h2>
-
-      {/* Streak & Stats */}
-      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/30">
-          <div className="text-sm text-blue-800 dark:text-blue-300">Current Streak</div>
-          <div className="text-3xl font-bold text-blue-900 dark:text-blue-200">
-            {streak} day{streak !== 1 ? "s" : ""}
-          </div>
-        </div>
-        <div className="rounded-lg bg-emerald-50 p-4 dark:bg-emerald-900/30">
-          <div className="text-sm text-emerald-800 dark:text-emerald-300">
-            Hours This Week
-          </div>
-          <div className="text-3xl font-bold text-emerald-900 dark:text-emerald-200">
-            {entries.reduce((sum, e) => sum + e.hours, 0)}
-          </div>
-        </div>
-        <div className="rounded-lg bg-amber-50 p-4 dark:bg-amber-900/30">
-          <div className="text-sm text-amber-800 dark:text-amber-300">
-            Goals Completed
-          </div>
-          <div className="text-3xl font-bold text-amber-900 dark:text-amber-200">
-            {goals.filter((g) => g.startsWith("[x]")).length}/{goals.length}
-          </div>
-        </div>
-        <div className="rounded-lg bg-purple-50 p-4 dark:bg-purple-900/30">
-          <div className="text-sm text-purple-800 dark:text-purple-300">
-            Last Entry
-          </div>
-          <div className="text-xl font-medium text-purple-900 dark:text-purple-200">
-            {todayEntry ? "Today" : "None"}
-          </div>
-        </div>
+    <div>
+      {/* Section header */}
+      <div className="flex items-center gap-3 mb-8">
+        <Sun className="text-forest flex-shrink-0" size={20} strokeWidth={1.8} />
+        <h3 className="text-[22px] font-semibold text-ink font-display">Weekly Review</h3>
       </div>
 
-      {/* Today's Log */}
-      <form onSubmit={handleSubmit} className="mb-8">
-        <h3 className="mb-4 text-xl font-semibold text-zinc-800 dark:text-zinc-200">
-          Log Today&apos;s Progress
-        </h3>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Study Hours
-            </label>
+      {/* Sparkline */}
+      <Sparkline entries={entries} />
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-4 mb-10">
+        {[
+          { val: `${streak}`, label: streak === 1 ? "day streak" : "day streak" },
+          { val: weekTotal.toFixed(1), label: "hours this week" },
+          { val: entries.length > 0 ? entries[entries.length - 1]?.date.slice(5) ?? "—" : "—", label: "last entry" },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="bg-surface-2 border border-bark-subtle rounded-[8px] px-4 py-4 text-center"
+          >
+            <div className="font-data text-2xl font-bold text-forest leading-none mb-1">
+              {s.val}
+            </div>
+            <div className="font-data text-[10px] text-ink-3 uppercase tracking-wider">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Log form */}
+      <form
+        onSubmit={handleSubmit}
+        className="bg-surface border border-bark rounded-[10px] p-8 mb-8 relative overflow-hidden"
+        style={{ boxShadow: "0 2px 10px rgba(60,40,10,0.04)" }}
+      >
+        {/* Leaf watermark */}
+        <div className="absolute top-4 left-4 opacity-[0.06] pointer-events-none">
+          <Leaf size={44} color="#3d6b4f" />
+        </div>
+
+        <div className="grid grid-cols-[140px_1fr_180px] gap-8 items-center">
+          {/* Big hours display */}
+          <div className="text-center">
+            <div className="font-data text-[52px] font-bold text-forest leading-none">
+              {hours.toFixed(1)}
+            </div>
+            <div className="font-data text-[11px] text-ink-3 mt-1">hours today</div>
+          </div>
+
+          {/* Slider + reflection */}
+          <div className="flex flex-col gap-5">
             <input
               type="range"
               min="0"
@@ -177,105 +222,107 @@ export default function WeeklyReview() {
               step="0.5"
               value={hours}
               onChange={(e) => setHours(parseFloat(e.target.value))}
-              className="mt-2 h-2 w-full cursor-pointer appearance-none rounded-lg bg-zinc-200 dark:bg-zinc-700"
             />
-            <div className="mt-2 flex justify-between text-sm text-zinc-600 dark:text-zinc-400">
-              <span>0h</span>
-              <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                {hours}h
-              </span>
-              <span>12h</span>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Reflection (optional)
-            </label>
             <textarea
-              rows={3}
+              rows={2}
               value={reflection}
               onChange={(e) => setReflection(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-zinc-300 bg-white p-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-              placeholder="What went well? What could be improved?"
+              placeholder="What did you work on?"
+              className="bg-transparent border-b border-bark focus:border-forest focus:outline-none py-2 text-[15px] text-ink placeholder:text-ink-3 font-reading resize-none"
             />
           </div>
+
+          {/* Save button */}
+          <div className="flex flex-col gap-3 items-center">
+            <button
+              type="submit"
+              className={`w-full py-3 px-5 rounded-[10px] font-display font-semibold text-[15px] transition-all duration-200 ${
+                saved
+                  ? "bg-forest-light text-surface"
+                  : "bg-forest text-surface hover:bg-forest-light"
+              }`}
+              style={{ boxShadow: "0 4px 14px rgba(61,107,79,0.2)" }}
+            >
+              {saved ? "Saved ✓" : "Save today"}
+            </button>
+            {streak > 0 && (
+              <p className="font-data text-[11px] text-ink-3 italic text-center">
+                {streak} day{streak !== 1 ? "s" : ""} of growth
+              </p>
+            )}
+          </div>
         </div>
-        <button
-          type="submit"
-          className="mt-6 w-full rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700"
-        >
-          Save Today&apos;s Review
-        </button>
       </form>
 
       {/* Goals */}
       <div className="mb-8">
-        <h3 className="mb-4 text-xl font-semibold text-zinc-800 dark:text-zinc-200">
-          Weekly Goals
-        </h3>
-        <div className="flex gap-2">
+        <h4 className="text-[16px] font-semibold text-ink mb-4 font-display">Weekly Goals</h4>
+        <div className="flex gap-2 mb-4">
           <input
             type="text"
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addGoal())}
-            placeholder="Add a goal for this week"
-            className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            placeholder="Add a goal for this week…"
+            className="flex-1 bg-surface border-b border-bark focus:border-forest focus:outline-none px-1 py-2 font-reading text-[14px] text-ink placeholder:text-ink-3"
           />
           <button
             onClick={addGoal}
-            className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-700"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-forest text-surface hover:bg-forest-light transition-colors mt-auto"
+            aria-label="Add goal"
           >
-            Add
+            <Plus size={14} strokeWidth={2.5} />
           </button>
         </div>
-        <ul className="mt-4 space-y-2">
+
+        <ul className="space-y-2">
           {goals.map((g, idx) => (
-            <li key={idx} className="flex items-center justify-between rounded-lg bg-zinc-100 px-4 py-3 dark:bg-zinc-800">
-              <span className="text-zinc-800 dark:text-zinc-200">{g}</span>
+            <li
+              key={idx}
+              className="flex items-center justify-between px-4 py-3 bg-surface rounded-[6px] border border-bark-subtle group"
+            >
+              <span className="text-[14px] text-ink font-reading leading-snug">{g}</span>
               <button
-                onClick={() => removeGoal(idx)}
-                className="text-sm text-red-600 hover:text-red-800 dark:text-red-400"
+                onClick={() => persistGoals(goals.filter((_, i) => i !== idx))}
+                className="text-ink-3 hover:text-amber-sol transition-colors opacity-0 group-hover:opacity-100 ml-3 flex-shrink-0"
+                aria-label="Remove goal"
               >
-                Remove
+                <X size={13} strokeWidth={2} />
               </button>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* Recent Entries */}
-      <div>
-        <h3 className="mb-4 text-xl font-semibold text-zinc-800 dark:text-zinc-200">
-          Recent Entries
-        </h3>
-        {entries.length === 0 ? (
-          <p className="text-zinc-500 dark:text-zinc-400">No entries yet. Log your first day!</p>
-        ) : (
-          <div className="space-y-3">
-            {entries.slice(-5).map((entry) => (
-              <div
-                key={entry.date}
-                className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
-              >
-                <div className="flex justify-between">
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
+      {/* Recent entries */}
+      {entries.length > 0 && (
+        <div>
+          <h4 className="text-[15px] font-semibold text-ink mb-3 font-display">Recent Entries</h4>
+          <div className="space-y-0.5">
+            {[...entries]
+              .sort((a, b) => b.date.localeCompare(a.date))
+              .slice(0, 5)
+              .map((entry) => (
+                <div
+                  key={entry.date}
+                  className="flex items-baseline gap-6 px-3 py-3 rounded-sm hover:bg-surface-2 transition-colors"
+                >
+                  <span className="font-data text-[12px] text-ink-3 w-20 flex-shrink-0">
                     {entry.date}
                   </span>
-                  <span className="font-bold text-blue-600 dark:text-blue-400">
+                  <span className="font-data text-[14px] font-bold text-forest flex-shrink-0 w-10">
                     {entry.hours}h
                   </span>
+                  {entry.reflection && (
+                    <span className="text-[13px] text-ink-2 font-reading truncate">
+                      {entry.reflection}
+                    </span>
+                  )}
                 </div>
-                {entry.reflection && (
-                  <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
-                    {entry.reflection}
-                  </p>
-                )}
-              </div>
-            ))}
+              ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
