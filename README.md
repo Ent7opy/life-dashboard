@@ -1,5 +1,7 @@
 # Degree Dashboard
 
+[![Deploy to GitHub Pages](https://github.com/Ent7opy/life-dashboard/actions/workflows/deploy.yml/badge.svg)](https://github.com/Ent7opy/life-dashboard/actions/workflows/deploy.yml)
+
 Interactive dashboard to track progress towards the **Environment & Energy B.Sc.** at Hochschule Rhein‑Waal.
 
 ![Dashboard screenshot](https://placehold.co/800x400/3b82f6/ffffff?text=Dashboard+Screenshot+Coming+Soon)
